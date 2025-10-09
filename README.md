@@ -49,6 +49,7 @@ Iniziamo a studiare il protocollo HTTP, perchè è quello che usiamo più di fre
             - DELETE per la cancellazione di una risorsa
             - OPTION per visualizzare i metodi accettati da quell'URL
             - HEAD per ottenere come risposta una intestazione dal server (senza payload)
+        - Campi `Nome-Campo: valore`
     - Payload (corpo), che è opzionale
 - Le risposte HTTP producono uno status code numerico, che può essere di 5 categorie
     - 1xx - Informazione
@@ -56,3 +57,17 @@ Iniziamo a studiare il protocollo HTTP, perchè è quello che usiamo più di fre
     - 3xx - Redirect
     - 4xx - Problema lato client
     - 5xx - Problema lato server
+- Il protocollo HTTP, come molti altri protocolli di rete, ha un sistema che permette di ridurre il traffico di rete nel momento in cui la risorsa è già presente in cache
+    - Nello specifico, quando il browser (client HTTP) deve fare una richiesta a una certa risorsa, aggiunge nell'header il campo `If-Modified-Since: <data>` alla HTTP-request
+    - Il server HTTP, quando riceve la richiesta con quel campo, controlla se la data della versione di cui dispone il client è la più recente
+        - Se è la più recente, restituisce uno status code `304 NOT MODIFIED` e nel body non inserisce il codice della pagina (o il contenuto della risorsa)
+        - Se invece il server dispone di una versione più aggiornata rispetto a quella del client, allora la invia come di consueto (quindi nel body ci aspettiamo di trovare la risorsa richiesta)
+    - Questo riduce di molto la _dimensione media_ dei messaggi HTTP di risposta
+
+#### Trasporto del protocollo HTTP
+- Il protocollo HTTP è trasportato con il protocollo TCP, che stabilisce una connessione per trasferire il messaggio
+- _By default_ la socket instaurata è:
+    - TCP/80 se HTTP
+    - TCP/443 se HTTPS
+- Esempio di richiesta HTTP: `GET http://sito.com:80/pagina.html`
+- 
