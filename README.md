@@ -67,7 +67,46 @@ Iniziamo a studiare il protocollo HTTP, perchè è quello che usiamo più di fre
 #### Trasporto del protocollo HTTP
 - Il protocollo HTTP è trasportato con il protocollo TCP, che stabilisce una connessione per trasferire il messaggio
 - _By default_ la socket instaurata è:
-    - TCP/80 se HTTP
-    - TCP/443 se HTTPS
-- Esempio di richiesta HTTP: `GET http://sito.com:80/pagina.html`
-- 
+    - TCP/80 se HTTP `http://sito.com:80`
+    - TCP/443 se HTTPS `https://sito.com:443`
+- Quando si usa un browser, la porta 80 e la 443 sono sottointese
+- Esempio di richiesta HTTP: `GET /pagina.html`
+- Siccome il protocollo HTTP è trasportato da TCP, allora, prima di fare una richiesta HTTP è necessario stabilire una connessione TCP tra il cliente e il server
+- Questa connessione avviene con il 3-way handshake
+    - Il client invia un `SYN` al server
+    - Il server risponde con un `SYN-ACK`
+    - Il client "ribatte" con un `ACK`
+    - A questo punto la connessione è stabilita, la socket (`IP:porta`) è stata instaurata e la trasmissione della richiesta e successivamente della risposta può avvenire
+    - Abbiamo disegnato questo scambio di messaggi con due linee che rappresentano il tempo e dei collegamenti che rappresentano i messaggi trasmessi
+    - La connessione viene chiusa dopo la risposta HTTP
+
+#### Trasporto di risorse di grandi dimensioni
+- Per trasferire risorse di grandi dimensioni, ci siamo accorti che queste vengono segmentate in parti più piccole
+- La perdita di una piccola parte nel trasferimento di un messaggio per intero, comporterebbe il suo reinvio totale (generando rallentamenti e saturazioni)
+- Questa segmentazione avviene al livello di trasporto (L4), il messaggio viene poi riassemblato al suo arrivo
+
+#### Richiesta di documenti con oggetti incorporati
+- Per documento con oggetto incorporato intendiamo, per esempio, una pagina web che al suo interno ha altri oggetti (es. immagini, video, file, ...)
+- Ci sono due possibilità:
+    1. Se gli oggetti risiedono sullo stesso web server, allora la richiesta verrà fatta a quel server (es. la home page del sito della scuola ha delle immagini che sono memorizzate sullo stesso server del sito, la richiesta verrà fatta a quel server)
+    2. Se gli oggetti sono esterni (su altri web server), allora la richiesta sarà esterna (es. sito della scuola usa un'immagine incorporata da un altro sito, la richiesta dell'immagine incorporata verrà fatta al secondo web server)
+- Per calcolare il numero di richieste HTTP, consideriamo questa cosa:
+    - 1 richiesta viene fatta per la pagina web
+    - 1 richiesta per ogni oggetto incorporato (es. immagini, video)
+    - I link _non_ sono oggetti incorporati (perché il loro caricamento avviene _solo_ se cliccati)
+
+#### Autenticazione HTTP base e codifica `Base64`
+- Quando si vuole accedere a una risorsa protetta, allora dobbiamo avere un'autorizzazione
+- In HTTP le "autorizzazioni" possono essere di più tipi (esattamente come nella realtà ci potremmo autenticare a un sistema con credenziali, FaceID, impronta digitale, smart card, ...)
+    - Basic (usa nome utente e password)
+    - Token (stringa che autorizza al consumo di quella risorsa)
+    - ...
+- Descriviamo come avviene il processo di consultazione di una pagina protetta da `Authorization: Basic`
+    1. Il client fa richiesta (`GET` o con altro metodo) della risorsa
+    2. Il server richiede autenticazione (es. prompt di credenziali)
+    3. Il client reinvia la richiesta con le credenziali
+        - SE le credenziali sono corrette (il server verifica se sono corrette), allora nel payload avrò la risorsa, riceverò un `200 - OK` o comunque un codice di stato che identifica un successo
+        - ALTRIMENTI ricevo un `401 - Unauthorized`
+- Con il metodo `Authorization: Basic`, le credenziali vengono inviate aggiungendo il campo omonimo alla richiesta (header)
+    - Le credenziali sono _codificate_ con `Base64`
+    - Ricordiamo che _codifica_ non vuol dire _crittografia_, quindi le credenziali sono inviate in chiaro (un malintenzionato può vedere le credenziali)
