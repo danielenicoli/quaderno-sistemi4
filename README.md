@@ -110,3 +110,43 @@ Iniziamo a studiare il protocollo HTTP, perchè è quello che usiamo più di fre
 - Con il metodo `Authorization: Basic`, le credenziali vengono inviate aggiungendo il campo omonimo alla richiesta (header)
     - Le credenziali sono _codificate_ con `Base64`
     - Ricordiamo che _codifica_ non vuol dire _crittografia_, quindi le credenziali sono inviate in chiaro (un malintenzionato può vedere le credenziali)
+
+### DNS
+- Il protocollo DNS (Domain Name System) è un protocollo di livello 7
+- Viene trasportato su UDP/53
+- Serve per raggiungere un host in rete attravero un nome di dominio e non attraverso il suo indirizzo IP
+    - Per esempio: per raggiungere Google, non scriverò il suo indirizzo IP, ma il nome a dominio corrispondente (google.com)
+
+#### Struttura del DNS
+- Ha una struttura gerarchica, distribuita ad albero
+    1. Root server
+    2. TLD (Top Level Domain)
+    3. SLD (Second Level Domain)
+    4. ...
+- La risoluzione del nome a dominio parte dal primo livello
+- Un host, invia le query al server DNS (di solito locale) a cui è collegato
+
+#### Tipi di record DNS
+| Tipo | Descrizione | Esempio di calore | Caso d'uso |
+|----------------|--------------------|-------------------|-------------|
+| **A** | Associa un nome di dominio a un indirizzo IP **IPv4** (32 bit). Serve a far corrispondere il nome del sito all'indirizzo del server che lo ospita | `example.com. IN A 93.184.216.34` | Puntare un dominio a un **web server IPv4** |
+| **AAAA** | Simile al record A, ma associa il dominio a un indirizzo **IPv6** (128 bit) | `example.com. IN AAAA 2606:2800:220:1:248:1893:25c8:1946` | Puntare un dominio a un **web server IPv6** |
+| **CNAME** | Crea un **alias** che reindirizza un nome di dominio a un altro dominio principale (canonical name) | `www.example.com. IN CNAME example.com.` | Usato per far puntare **sottodomini** (es. `www`) al dominio principale |
+| **MX** | Definisce i **server di posta** che ricevono le email per il dominio. Include una priorità numerica (più basso = più alta priorità) | `example.com. IN MX 10 mail.example.com.` | Configurare la **posta elettronica** del dominio |
+| **TXT** | Contiene **testo arbitrario**. Spesso utilizzato per verifiche di dominio, autenticazione email (SPF, DKIM, DMARC) o altre informazioni | `example.com. IN TXT "v=spf1 include:_spf.google.com ~all"` | Verifica di dominio, **sicurezza email** o integrazione con servizi esterni |
+| **NS** | Specifica i **nameserver autoritativi** che gestiscono i record DNS del dominio | `example.com. IN NS ns1.example.net.` | Definire chi gestisce il **DNS del dominio** |
+
+#### Esempio file di zona `nicoli.dev.`
+| Nome | Tipo | Valore | TTL | Descrizione |
+|------|------|--------|-----|-------------|
+| `nicoli.dev.` | NS | `ns1.dnsprovider.net.` | 86400 | Indica un nameserver autoritativo per la zona. I resolver interrogano questi NS per ottenere i record del dominio. TTL alto è tipico perché i NS cambiano raramente |
+| `nicoli.dev.` | NS | `ns2.dnsprovider.net.` | 86400 | Secondario autoritativo (ridondanza). Se `ns1` non risponde, si usa `ns2` |
+| `nicoli.dev.` | A | `93.184.216.34` | 3600 | Associa il dominio radice a un indirizzo IPv4 del **web server** che ospita il sito principale. `A` è necessario perché i browser e i client risolvono il nome in IP per connettersi. TTL moderato per permettere aggiornamenti se l'IP cambia |
+| `www.nicoli.dev.` | CNAME | `nicoli.dev.` | 3600 | Alias: `www.test.dev` punta al nome canonico `nicoli.dev.`. Vantaggio: mantiene un unico punto di aggiornamento (se cambi l'`A` di `nicoli.dev.` basta aggiornare lì) **Nota**: un CNAME non deve coesistere con altri record (es. MX/TXT) per lo stesso nome |
+| `libri.nicoli.dev.` | A | `93.184.216.50` | 3600 | Sottodominio che ospita l'**applicazione libri** su un server dedicato (IP specifico). Uso di record `A` perché serve un indirizzo IP diretto per connessioni HTTPS |
+| `tools.nicoli.dev.` | CNAME | `libri.nicoli.dev.` | 3600 | Alias che punta a `libri.nicoli.dev.`: significa che `tools.test.dev` risolve allo stesso IP di `libri`. Comodo per condividere lo stesso server senza duplicare l'IP |
+| `moodle.nicoli.dev.` | A | `93.184.216.51` | 3600 | Sottodominio per la piattaforma Moodle su un altro server (IP differente). `A` diretto per performance e controllo indipendente |
+| `nicoli.dev.` | MX | `0 test-dev.mail.protection.outlook.com.` | 3600 | Mail Exchange: indica che la posta per `@nicoli.dev` è gestita da Exchange / Microsoft 365 tramite l'endpoint `test-dev.mail.protection.outlook.com.`. Il prefisso `0` è la priorità (più basso = più alta priorità). I record MX devono puntare a nomi A o a record forniti dal provider di posta |
+| `autodiscover.nicoli.dev.` | CNAME | `autodiscover.outlook.com.` | 3600 | Usato dai client (Outlook, mobile) per la **configurazione automatica** delle caselle Exchange. Puntare a `autodiscover.outlook.com.` è la pratica standard per Exchange Online; facilita setup e discovery dei servizi di posta |
+| `nicoli.dev.` | TXT | `"google-site-verification=abc123XYZverifycode"` | 3600 | Token di verifica fornito da Google per provare la proprietà del dominio (usato in Search Console, G Suite, ecc.). Deve corrispondere esattamente al valore fornito da Google |
+
