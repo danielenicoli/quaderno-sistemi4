@@ -127,7 +127,7 @@ Iniziamo a studiare il protocollo HTTP, perchè è quello che usiamo più di fre
 - Un host, invia le query al server DNS (di solito locale) a cui è collegato
 
 #### Tipi di record DNS
-| Tipo | Descrizione | Esempio di calore | Caso d'uso |
+| Tipo | Descrizione | Esempio di record | Caso d'uso |
 |----------------|--------------------|-------------------|-------------|
 | **A** | Associa un nome di dominio a un indirizzo IP **IPv4** (32 bit). Serve a far corrispondere il nome del sito all'indirizzo del server che lo ospita | `example.com. IN A 93.184.216.34` | Puntare un dominio a un **web server IPv4** |
 | **AAAA** | Simile al record A, ma associa il dominio a un indirizzo **IPv6** (128 bit) | `example.com. IN AAAA 2606:2800:220:1:248:1893:25c8:1946` | Puntare un dominio a un **web server IPv6** |
